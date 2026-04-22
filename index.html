@@ -452,6 +452,11 @@
               justify-content: center; color: var(--t3); flex-shrink: 0;
               -webkit-tap-highlight-color: transparent; }
     .pm-del:active { background: #fff0f0; color: var(--red); border-color: var(--red); }
+    .pm-edit { width: 38px; height: 38px; background: none; border: 1px solid var(--border);
+              border-radius: 8px; cursor: pointer; display: flex; align-items: center;
+              justify-content: center; color: var(--t3); flex-shrink: 0;
+              -webkit-tap-highlight-color: transparent; }
+    .pm-edit:active { background: var(--green-light); color: var(--green); border-color: var(--green); }
 
     /* ─ History timeline ────────────────────────────────────── */
     .h-card { background: var(--card); border-radius: 12px; overflow: hidden;
@@ -1811,8 +1816,8 @@ function propCardHTML(p) {
         +(dates ? '<div class="prop-dates">'+dates+'</div>' : '')
       +'</div>'
       +'<div class="prop-right">'
-        +'<button class="pm-del" onclick="event.stopPropagation();deleteProperty(\''+esc(p.name)+'\')" title="物件を削除" style="width:30px;height:30px">'
-          +'<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3,6 5,6 21,6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>'
+        +'<button class="pm-edit" onclick="event.stopPropagation();openEditPropertyModal(\''+esc(p.name)+'\')" title="物件を編集" style="width:30px;height:30px">'
+          +'<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>'
         +'</button>'
         +'<button class="prop-done-phases-btn" id="'+cid+'-pdtbtn" onclick="event.stopPropagation();toggleDonePhases(\''+cid+'\')"><span id="'+cid+'-pdtlbl"></span></button>'
         +'<svg class="prop-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6,9 12,15 18,9"/></svg>'
@@ -2415,6 +2420,52 @@ async function saveAddProperty() {
     });
     closeModal();
     showToast('物件「'+name+'」を追加しました');
+    propData = await api({ mode: 'getProperties' });
+    renderProps(propData);
+    restoreTaskCacheToUI();
+  } catch(e) {
+    showToast('エラー: ' + e.message);
+  }
+}
+
+function openEditPropertyModal(propName) {
+  const p = propData.find(x => x.name === propName);
+  if (!p) { showToast('物件が見つかりません'); return; }
+  document.getElementById('modal-title-txt').textContent = '物件を編集';
+  document.getElementById('modal-body').innerHTML = ''
+    +'<div class="field"><label>物件名</label><input type="text" id="f-ename" value="'+esc(p.name)+'" disabled style="opacity:0.5"></div>'
+    +'<div class="field"><label>市町村</label><input type="text" id="f-ecity" value="'+esc(p.city||'')+'" placeholder="例: 前橋市"></div>'
+    +'<div class="field"><label>本体着工日</label><input type="date" id="f-estart" value="'+(p.start||'')+'"></div>'
+    +'<div class="field"><label>建て方</label><input type="date" id="f-eframe" value="'+(p.frame||'')+'"></div>'
+    +'<div class="field"><label>竣工</label><input type="date" id="f-ecompletion" value="'+(p.completion||'')+'"></div>'
+    +'<div class="field"><label>引渡し日</label><input type="date" id="f-ehandover" value="'+(p.handover||'')+'"></div>'
+    +'<div class="modal-actions">'
+      +'<button class="btn-modal cancel" onclick="closeModal()">キャンセル</button>'
+      +'<button class="btn-modal save" onclick="saveEditProperty(\''+esc(p.name)+'\')">保存</button>'
+    +'</div>'
+    +'<div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border);text-align:center">'
+      +'<button onclick="closeModal();deleteProperty(\''+esc(p.name)+'\')" style="background:none;border:none;color:var(--red);font-size:13px;font-family:var(--fp);cursor:pointer;padding:8px 16px">この物件を削除</button>'
+    +'</div>';
+  document.getElementById('modal').classList.add('on');
+}
+
+async function saveEditProperty(origName) {
+  const fields = [
+    { key:'city', val: document.getElementById('f-ecity').value.trim() },
+    { key:'start', val: document.getElementById('f-estart').value },
+    { key:'frame', val: document.getElementById('f-eframe').value },
+    { key:'completion', val: document.getElementById('f-ecompletion').value },
+    { key:'handover', val: document.getElementById('f-ehandover').value },
+  ];
+  const p = propData.find(x => x.name === origName);
+  const changed = fields.filter(f => (f.val || '') !== (p[f.key] || ''));
+  if (changed.length === 0) { closeModal(); showToast('変更はありません'); return; }
+  try {
+    for (const f of changed) {
+      await api({ mode:'updateProperty', name:origName, field:f.key, value:f.val });
+    }
+    closeModal();
+    showToast('物件情報を更新しました');
     propData = await api({ mode: 'getProperties' });
     renderProps(propData);
     restoreTaskCacheToUI();
