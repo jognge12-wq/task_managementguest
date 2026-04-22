@@ -98,6 +98,9 @@
       .m-add-row { background: oklch(0.20 0.005 95); }
       .prio-row { border-color: var(--border); }
       .prio-prop { color: var(--green-mid); }
+      .prop-act-btn { background: var(--card); border-color: var(--border); }
+      .prop-act-btn:active { background: oklch(0.30 0.05 155); }
+      .prop-act-del:active { background: oklch(0.30 0.05 25); }
       .err { background: oklch(0.22 0.03 25); border-color: oklch(0.35 0.06 25); }
       .btn-modal.cancel { background: var(--bg); }
       .btn-modal.danger { background: oklch(0.22 0.03 25); }
@@ -452,11 +455,15 @@
               justify-content: center; color: var(--t3); flex-shrink: 0;
               -webkit-tap-highlight-color: transparent; }
     .pm-del:active { background: #fff0f0; color: var(--red); border-color: var(--red); }
-    .pm-edit { width: 38px; height: 38px; background: none; border: 1px solid var(--border);
-              border-radius: 8px; cursor: pointer; display: flex; align-items: center;
-              justify-content: center; color: var(--t3); flex-shrink: 0;
-              -webkit-tap-highlight-color: transparent; }
-    .pm-edit:active { background: var(--green-light); color: var(--green); border-color: var(--green); }
+    /* 物件アクションバー（展開時に表示） */
+    .prop-actions { display: flex; gap: 8px; padding: 10px 14px 6px; }
+    .prop-act-btn { display: flex; align-items: center; gap: 5px; padding: 7px 14px;
+                    border-radius: 10px; border: 1px solid var(--border); background: var(--card);
+                    font-size: 12px; font-family: var(--fp); color: var(--t2); cursor: pointer;
+                    -webkit-tap-highlight-color: transparent; transition: all .15s var(--ease-std); }
+    .prop-act-btn:active { background: var(--green-light); color: var(--green); border-color: var(--green); }
+    .prop-act-del { margin-left: auto; }
+    .prop-act-del:active { background: #fff0f0; color: var(--red); border-color: var(--red); }
 
     /* ─ History timeline ────────────────────────────────────── */
     .h-card { background: var(--card); border-radius: 12px; overflow: hidden;
@@ -1816,9 +1823,6 @@ function propCardHTML(p) {
         +(dates ? '<div class="prop-dates">'+dates+'</div>' : '')
       +'</div>'
       +'<div class="prop-right">'
-        +'<button class="pm-edit" onclick="event.stopPropagation();openEditPropertyModal(\''+esc(p.name)+'\')" title="物件を編集" style="width:30px;height:30px">'
-          +'<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>'
-        +'</button>'
         +'<button class="prop-done-phases-btn" id="'+cid+'-pdtbtn" onclick="event.stopPropagation();toggleDonePhases(\''+cid+'\')"><span id="'+cid+'-pdtlbl"></span></button>'
         +'<svg class="prop-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6,9 12,15 18,9"/></svg>'
       +'</div>'
@@ -1860,7 +1864,15 @@ async function loadPropTasks(propName, cid) {
 
 function renderPropTasks(propName, cid, tasks, wrap) {
   if (!tasks || tasks.length === 0) {
-    wrap.innerHTML = '<div class="init-box">'
+    wrap.innerHTML = '<div class="prop-actions">'
+      +'<button class="prop-act-btn" onclick="openEditPropertyModal(\''+esc(propName)+'\')">'
+        +'<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg> 物件情報を編集'
+      +'</button>'
+      +'<button class="prop-act-btn prop-act-del" onclick="deleteProperty(\''+esc(propName)+'\')">'
+        +'<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3,6 5,6 21,6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg> 削除'
+      +'</button>'
+    +'</div>'
+    +'<div class="init-box">'
       +'<p>タスクが未登録です</p>'
       +'<button class="btn-init" onclick="initProp(\''+esc(propName)+'\',\''+cid+'\',this)">マスターからタスクを一括生成</button>'
     +'</div>';
@@ -1899,7 +1911,15 @@ function renderPropTasks(propName, cid, tasks, wrap) {
   if (mpb) mpb.style.width = pct + '%';
   if (mpl) mpl.textContent = pct + '%';
 
-  let html = '<div class="prog-row">'
+  let html = '<div class="prop-actions">'
+    +'<button class="prop-act-btn" onclick="openEditPropertyModal(\''+esc(propName)+'\')">'
+      +'<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg> 物件情報を編集'
+    +'</button>'
+    +'<button class="prop-act-btn prop-act-del" onclick="deleteProperty(\''+esc(propName)+'\')">'
+      +'<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3,6 5,6 21,6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg> 削除'
+    +'</button>'
+  +'</div>'
+  +'<div class="prog-row">'
     +'<div class="prog-bg" id="'+cid+'-pb"><div class="prog-fill" style="width:'+pct+'%"></div></div>'
     +'<span class="prog-lbl" id="'+cid+'-pl">'+done+'/'+total+'</span>'
   +'</div>';
