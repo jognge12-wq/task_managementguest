@@ -98,9 +98,9 @@
       .m-add-row { background: oklch(0.20 0.005 95); }
       .prio-row { border-color: var(--border); }
       .prio-prop { color: var(--green-mid); }
-      .prop-act-btn { background: var(--card); border-color: var(--border); }
-      .prop-act-btn:active { background: oklch(0.30 0.05 155); }
-      .prop-act-del:active { background: oklch(0.30 0.05 25); }
+      .prop-card-btn { border-color: var(--border); }
+      .prop-card-btn:active { background: oklch(0.30 0.05 155); color: var(--green); }
+      .prop-card-btn-del:active { background: oklch(0.30 0.05 25); color: var(--red); }
       .err { background: oklch(0.22 0.03 25); border-color: oklch(0.35 0.06 25); }
       .btn-modal.cancel { background: var(--bg); }
       .btn-modal.danger { background: oklch(0.22 0.03 25); }
@@ -219,7 +219,7 @@
     .prop-mini-lbl { font-family: var(--fm); font-size: 11px; color: var(--t2); }
     .prop-dates { display: flex; gap: 8px; margin-top: 4px; flex-wrap: wrap; }
     .prop-date { font-size: 11px; color: var(--t1); display: flex; align-items: center; gap: 3px; }
-    .prop-right { display: flex; flex-direction: column; align-items: flex-end; gap: 5px; flex-shrink: 0; }
+    .prop-right { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
     .prop-progress-badge { font-size: 12px; padding: 3px 10px; border-radius: 10px;
                            background: var(--green-light); color: var(--green); font-weight: 600; }
     .prop-done-badge { font-size: 11px; padding: 3px 9px; border-radius: 10px;
@@ -455,15 +455,14 @@
               justify-content: center; color: var(--t3); flex-shrink: 0;
               -webkit-tap-highlight-color: transparent; }
     .pm-del:active { background: #fff0f0; color: var(--red); border-color: var(--red); }
-    /* 物件アクションバー（展開時に表示） */
-    .prop-actions { display: flex; gap: 8px; padding: 10px 14px 6px; }
-    .prop-act-btn { display: flex; align-items: center; gap: 5px; padding: 7px 14px;
-                    border-radius: 10px; border: 1px solid var(--border); background: var(--card);
-                    font-size: 12px; font-family: var(--fp); color: var(--t2); cursor: pointer;
-                    -webkit-tap-highlight-color: transparent; transition: all .15s var(--ease-std); }
-    .prop-act-btn:active { background: var(--green-light); color: var(--green); border-color: var(--green); }
-    .prop-act-del { margin-left: auto; }
-    .prop-act-del:active { background: #fff0f0; color: var(--red); border-color: var(--red); }
+    /* 物件カード上のアイコンボタン */
+    .prop-card-btn { width: 32px; height: 32px; background: none; border: 1px solid var(--border);
+                     border-radius: 8px; cursor: pointer; display: flex; align-items: center;
+                     justify-content: center; color: var(--t3); flex-shrink: 0;
+                     -webkit-tap-highlight-color: transparent; transition: all .15s var(--ease-std);
+                     touch-action: manipulation; }
+    .prop-card-btn:active { background: var(--green-light); color: var(--green); border-color: var(--green); }
+    .prop-card-btn-del:active { background: #fff0f0; color: var(--red); border-color: var(--red); }
 
     /* ─ History timeline ────────────────────────────────────── */
     .h-card { background: var(--card); border-radius: 12px; overflow: hidden;
@@ -1814,7 +1813,7 @@ function propCardHTML(p) {
     '<span class="prop-date" onclick="event.stopPropagation();openEditPropertyDate(\''+esc(p.name)+'\',\''+d.key+'\',\''+esc(d.val||'')+'\')" title="タップで編集">'+cal+d.label+' '+fmtDate(d.val)+'</span>'
   ).join('');
   return '<div class="prop-card" id="'+cid+'" data-prop="'+esc(p.name)+'" data-alldone="false">'
-    +'<div class="prop-hdr" onclick="toggleProp(\''+cid+'\')">'
+    +'<div class="prop-hdr" onclick="propHdrClick(event,\''+cid+'\')">'
       +'<div class="prop-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></svg></div>'
       +'<div class="prop-info">'
         +'<div class="prop-name">'+esc(p.name)+'</div>'
@@ -1823,12 +1822,24 @@ function propCardHTML(p) {
         +(dates ? '<div class="prop-dates">'+dates+'</div>' : '')
       +'</div>'
       +'<div class="prop-right">'
-        +'<button class="prop-done-phases-btn" id="'+cid+'-pdtbtn" onclick="event.stopPropagation();toggleDonePhases(\''+cid+'\')"><span id="'+cid+'-pdtlbl"></span></button>'
+        +'<button class="prop-card-btn" onclick="openEditPropertyModal(\''+esc(p.name)+'\')" aria-label="編集">'
+          +'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>'
+        +'</button>'
+        +'<button class="prop-card-btn prop-card-btn-del" onclick="deleteProperty(\''+esc(p.name)+'\')" aria-label="削除">'
+          +'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3,6 5,6 21,6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>'
+        +'</button>'
+        +'<button class="prop-done-phases-btn" id="'+cid+'-pdtbtn" onclick="toggleDonePhases(\''+cid+'\')"><span id="'+cid+'-pdtlbl"></span></button>'
         +'<svg class="prop-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6,9 12,15 18,9"/></svg>'
       +'</div>'
     +'</div>'
     +'<div class="phases-wrap" id="'+cid+'-pw"><div class="center" style="padding:20px"><div class="spin"></div></div></div>'
   +'</div>';
+}
+
+function propHdrClick(e, cid) {
+  // ボタンや日付クリック時はカード開閉しない
+  if (e.target.closest('button, .prop-date')) return;
+  toggleProp(cid);
 }
 
 async function toggleProp(cid) {
@@ -1864,15 +1875,7 @@ async function loadPropTasks(propName, cid) {
 
 function renderPropTasks(propName, cid, tasks, wrap) {
   if (!tasks || tasks.length === 0) {
-    wrap.innerHTML = '<div class="prop-actions">'
-      +'<button class="prop-act-btn" onclick="openEditPropertyModal(\''+esc(propName)+'\')">'
-        +'<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg> 物件情報を編集'
-      +'</button>'
-      +'<button class="prop-act-btn prop-act-del" onclick="deleteProperty(\''+esc(propName)+'\')">'
-        +'<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3,6 5,6 21,6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg> 削除'
-      +'</button>'
-    +'</div>'
-    +'<div class="init-box">'
+    wrap.innerHTML = '<div class="init-box">'
       +'<p>タスクが未登録です</p>'
       +'<button class="btn-init" onclick="initProp(\''+esc(propName)+'\',\''+cid+'\',this)">マスターからタスクを一括生成</button>'
     +'</div>';
@@ -1911,15 +1914,7 @@ function renderPropTasks(propName, cid, tasks, wrap) {
   if (mpb) mpb.style.width = pct + '%';
   if (mpl) mpl.textContent = pct + '%';
 
-  let html = '<div class="prop-actions">'
-    +'<button class="prop-act-btn" onclick="openEditPropertyModal(\''+esc(propName)+'\')">'
-      +'<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg> 物件情報を編集'
-    +'</button>'
-    +'<button class="prop-act-btn prop-act-del" onclick="deleteProperty(\''+esc(propName)+'\')">'
-      +'<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3,6 5,6 21,6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg> 削除'
-    +'</button>'
-  +'</div>'
-  +'<div class="prog-row">'
+  let html = '<div class="prog-row">'
     +'<div class="prog-bg" id="'+cid+'-pb"><div class="prog-fill" style="width:'+pct+'%"></div></div>'
     +'<span class="prog-lbl" id="'+cid+'-pl">'+done+'/'+total+'</span>'
   +'</div>';
@@ -2959,7 +2954,7 @@ async function loadHistory() {
 // ═══════════════════════════════════════════════════════
 //  Utils
 // ═══════════════════════════════════════════════════════
-function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
 function slug(s) { return encodeURIComponent(String(s||'')).replace(/%/g,'_'); }
 function now() { return new Date().toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'}); }
 function fmtDate(s) {
