@@ -6,26 +6,114 @@
   <title>現場タスク管理</title>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
   <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    :root {
-      --green:      #006837;
-      --green-dark: #004d29;
-      --green-light:#e8f5e9;
-      --green-mid:  #4a9e72;
-      --bg:         #f1f5f9;
-      --card:       #ffffff;
-      --border:     #e2e8f0;
-      --t1:         #1e293b;
-      --t2:         #334155;
-      --t3:         #475569;
-      --red:        #ef4444;
-      --amber:      #f59e0b;
-      --blue:       #2563eb;
-      --fp:         'Noto Sans JP', sans-serif;
-      --fm:         'DM Mono', monospace;
-      --radius-card: 16px;
-      --shadow-card: 0 4px 20px rgba(0,0,0,.09);
+    /* ===== View Transitions: タブ切替クロスフェード ===== */
+    /* 対応: Chrome/Edge/Safari 18+。未対応ブラウザでは無視される */
+    @view-transition { navigation: auto; }
+    ::view-transition-old(root),
+    ::view-transition-new(root) {
+        animation-duration: 0.25s;
+        animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
     }
+
+    /* ===== 長いリストの描画スキップ最適化 ===== */
+    .task-row,
+    .m-row,
+    .h-row,
+    .prio-row {
+        content-visibility: auto;
+        contain-intrinsic-size: auto 56px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      /* ブランドグリーン — oklch で統一 */
+      --green:       oklch(0.52 0.16 155);
+      --green-dark:  oklch(0.35 0.11 155);
+      --green-light: oklch(0.94 0.04 155);
+      --green-mid:   oklch(0.55 0.14 155);
+      /* ニュートラル */
+      --bg:          oklch(0.965 0.003 95);
+      --card:        #ffffff;
+      --border:      oklch(0.92 0.005 95);
+      --t1:          oklch(0.22 0.01 95);
+      --t2:          oklch(0.38 0.01 95);
+      --t3:          oklch(0.55 0.008 95);
+      /* ステータス */
+      --red:         oklch(0.58 0.18 25);
+      --amber:       oklch(0.78 0.12 85);
+      --blue:        oklch(0.55 0.18 260);
+      /* フォント */
+      --fp:          'Noto Sans JP', sans-serif;
+      --fm:          'DM Mono', monospace;
+      --radius-card: 16px;
+      /* シャドウ 3 段階 */
+      --shadow-sm:   0 1px 2px rgba(15,25,20,0.04);
+      --shadow:      0 1px 3px rgba(15,25,20,0.05), 0 1px 2px rgba(15,25,20,0.04);
+      --shadow-lg:   0 4px 20px rgba(15,25,20,0.06), 0 1px 3px rgba(15,25,20,0.04);
+      --shadow-card: var(--shadow-lg);
+      /* イージング */
+      --ease-out:    cubic-bezier(0.2, 0, 0, 1);
+      --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+      --ease-std:    cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* ===== ダークモード（OS 設定に自動追従） ===== */
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --green:       oklch(0.68 0.18 155);
+        --green-dark:  oklch(0.55 0.14 155);
+        --green-light: oklch(0.30 0.05 155);
+        --green-mid:   oklch(0.58 0.16 155);
+        --bg:          oklch(0.18 0.005 95);
+        --card:        oklch(0.22 0.006 95);
+        --border:      oklch(0.30 0.008 95);
+        --t1:          oklch(0.95 0.005 95);
+        --t2:          oklch(0.78 0.006 95);
+        --t3:          oklch(0.60 0.008 95);
+        --red:         oklch(0.70 0.15 25);
+        --amber:       oklch(0.85 0.12 85);
+        --blue:        oklch(0.70 0.15 260);
+        --shadow-sm:   0 1px 2px rgba(0,0,0,0.2);
+        --shadow:      0 1px 3px rgba(0,0,0,0.25), 0 1px 2px rgba(0,0,0,0.2);
+        --shadow-lg:   0 4px 20px rgba(0,0,0,0.3), 0 1px 3px rgba(0,0,0,0.2);
+        --shadow-card: var(--shadow-lg);
+      }
+      body { color-scheme: dark; }
+      img { filter: brightness(0.9); }
+      /* ハードコード色のダークモード救済 */
+      .prop-hdr:active { background: oklch(0.26 0.007 95); }
+      .phase-sec.open .phase-hdr { background: oklch(0.25 0.02 155); }
+      .phase-cnt { background: var(--card); }
+      .chk { background: var(--card); }
+      .indiv-sec { background: oklch(0.22 0.02 80); border-color: oklch(0.35 0.05 80); }
+      .indiv-hdr:active { background: oklch(0.25 0.03 80); }
+      .indiv-lbl { color: oklch(0.85 0.12 85); }
+      .indiv-cnt { background: oklch(0.28 0.04 80); color: oklch(0.85 0.12 85); }
+      .indiv-add-row { background: oklch(0.20 0.015 80); border-color: oklch(0.30 0.04 80); }
+      .indiv-add-inp { background: var(--card); border-color: oklch(0.30 0.04 80); }
+      .m-ghdr-new { background: var(--card); }
+      .m-group.open .m-ghdr-new { background: oklch(0.25 0.03 155); }
+      .m-row:hover { background: oklch(0.25 0.006 95); }
+      .m-add-row { background: oklch(0.20 0.005 95); }
+      .prio-row { border-color: var(--border); }
+      .prio-prop { color: var(--green-mid); }
+      .err { background: oklch(0.22 0.03 25); border-color: oklch(0.35 0.06 25); }
+      .btn-modal.cancel { background: var(--bg); }
+      .btn-modal.danger { background: oklch(0.22 0.03 25); }
+      .modal-bg { background: rgba(0,0,0,.55); }
+    }
+
+    /* ===== モーダルアニメーション ===== */
+    @keyframes ceFadeIn {
+      from { opacity: 0; }
+      to   { opacity: 1; }
+    }
+    @keyframes ceSlideUp {
+      from { opacity: 0; transform: translateY(24px) scale(0.97); }
+      to   { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
     body { font-family: var(--fp); background: var(--bg); color: var(--t1);
            min-height: 100dvh; font-size: 15px; line-height: 1.6;
            -webkit-font-smoothing: antialiased; }
@@ -46,10 +134,10 @@
     .setup-field input { width: 100%; padding: 13px 14px; border: 1.5px solid var(--border);
                          border-radius: 12px; font-family: var(--fp); font-size: 14px;
                          color: var(--t1); outline: none; transition: border-color .18s; }
-    .setup-field input:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(0,104,55,.1); }
+    .setup-field input:focus { border-color: var(--green); box-shadow: 0 0 0 3px oklch(0.52 0.16 155 / 0.12), 0 0 0 1px var(--green); }
     .setup-btn { width: 100%; padding: 14px; background: var(--green); color: white; border: none;
                  border-radius: 12px; font-family: var(--fp); font-size: 14px; font-weight: 600;
-                 cursor: pointer; margin-top: 8px; transition: background .15s; }
+                 cursor: pointer; margin-top: 8px; transition: background .18s var(--ease-std); }
     .setup-btn:active { background: var(--green-dark); }
     .setup-btn:disabled { opacity: .5; cursor: not-allowed; }
     .setup-status { text-align: center; font-size: 13px; margin-top: 12px; min-height: 18px; }
@@ -57,31 +145,23 @@
     .setup-status.err { color: var(--red); }
     .setup-link { display: block; text-align: center; font-size: 11px; color: var(--t3);
                   margin-top: 16px; text-decoration: underline; cursor: pointer; }
-    .setup-reset { position: fixed; bottom: 12px; right: 12px; padding: 6px 12px;
+    .setup-reset { position: fixed; bottom: calc(12px + env(safe-area-inset-bottom, 0px)); right: 12px;
+                   padding: 6px 12px;
                    background: var(--card); border: 1px solid var(--border); border-radius: 8px;
                    font-size: 12px; color: var(--t2); cursor: pointer; z-index: 100;
+                   box-shadow: var(--shadow-sm);
                    display: none; }
     .setup-reset:active { background: var(--bg); }
 
     /* ─ Header ─────────────────────────────────────────────── */
     .hdr { background: var(--card); position: sticky; top: 0; z-index: 200;
-           box-shadow: 0 1px 0 var(--border), 0 2px 8px rgba(0,0,0,.06);
-           border-radius: 0 0 14px 14px; }
+           box-shadow: 0 1px 0 var(--border); }
     .hdr-top { display: flex; align-items: center; height: 56px; padding: 0 14px; gap: 10px; }
     .hdr-info { flex: 1; display: flex; flex-direction: column; justify-content: center; }
     .hdr-title { font-size: 16px; font-weight: 700; letter-spacing: .04em; color: var(--t1); }
     .hdr-sub { font-size: 11px; color: var(--t2); margin-top: 1px; font-weight: 500; }
-    .tabs { display: flex; border-top: 1px solid var(--border); }
-    .tab { flex: 1; padding: 11px 4px 12px; background: none; border: none;
-           color: var(--t2); font-family: var(--fp); font-size: 13px;
-           cursor: pointer; position: relative; transition: color .15s;
-           -webkit-tap-highlight-color: transparent; }
-    .tab.on { color: var(--green); font-weight: 700; }
-    .tab.on::after { content: ''; position: absolute; bottom: 0; left: 14%; width: 72%; height: 2.5px;
-                     background: var(--green); border-radius: 2px 2px 0 0; }
-
     /* ─ Panes ───────────────────────────────────────────────── */
-    .pane { display: none; padding: 12px 12px 100px; max-width: 540px; margin: 0 auto; }
+    .pane { display: none; padding: 12px 12px calc(100px + env(safe-area-inset-bottom, 0px)); max-width: 540px; margin: 0 auto; }
     .pane.on { display: block; }
     @media (min-width: 768px)  { .pane { max-width: 580px;  padding: 16px 20px 100px; } }
     @media (min-width: 1024px) { .pane { max-width: 620px;  padding: 20px 24px 100px; } }
@@ -98,20 +178,20 @@
     .btn-xs.primary:active { background: var(--green); }
 
     /* ─ Sort toggle ─────────────────────────────────────────── */
-    .sort-bar { display: flex; align-items: center; gap: 6px; margin-bottom: 10px; }
-    .sort-lbl { font-size: 12px; color: var(--t2); flex-shrink: 0; }
+    .sort-bar { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; }
+    .sort-lbl { font-size: 11px; color: var(--t3); flex-shrink: 0; }
     .sort-btns { display: flex; gap: 4px; }
-    .sort-btn { padding: 6px 12px; border-radius: 14px; font-size: 12px; font-family: var(--fp);
-                border: 1px solid var(--border); background: var(--card); color: var(--t1);
-                cursor: pointer; -webkit-tap-highlight-color: transparent; transition: all .15s; }
+    .sort-btn { padding: 5px 10px; border-radius: 12px; font-size: 11px; font-family: var(--fp);
+                border: 1px solid var(--border); background: var(--card); color: var(--t2);
+                cursor: pointer; -webkit-tap-highlight-color: transparent; transition: all .2s var(--ease-std); }
     .sort-btn:active { background: var(--bg); }
     .sort-btn.on { background: var(--green-mid); color: white; border-color: var(--green-mid); font-weight: 600; }
 
     /* ─ Property card ───────────────────────────────────────── */
     .prop-card { background: var(--card); border-radius: var(--radius-card); margin-bottom: 10px;
-                 overflow: hidden; box-shadow: var(--shadow-card);
-                 border: 1.5px solid transparent; transition: border-color .18s; }
-    .prop-card.open { border-color: #c5dfd0; }
+                 overflow: hidden; box-shadow: var(--shadow);
+                 border: 1.5px solid transparent; transition: border-color .2s var(--ease-std), box-shadow .2s var(--ease-std); }
+    .prop-card.open { border-color: var(--green-light); box-shadow: var(--shadow-lg); }
     .prop-card.done-all { opacity: .75; }
     .prop-hdr { display: flex; align-items: flex-start; padding: 13px 14px 10px;
                 cursor: pointer; gap: 11px; user-select: none;
@@ -120,7 +200,7 @@
     .prop-icon { width: 36px; height: 36px; background: var(--green-light); border-radius: 9px;
                  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
                  color: var(--green); margin-top: 1px;
-                 transition: background .18s, color .18s; }
+                 transition: background .2s var(--ease-std), color .2s var(--ease-std); }
     .prop-card.open .prop-icon { background: var(--green); color: white; }
     .prop-info { flex: 1; min-width: 0; }
     .prop-name { font-size: 15px; font-weight: 600; white-space: nowrap; overflow: hidden;
@@ -142,7 +222,7 @@
     .prop-done-badge { font-size: 11px; padding: 3px 9px; border-radius: 10px;
                        background: var(--border); color: var(--t2); }
     .prop-arrow { width: 16px; height: 16px; color: var(--t3);
-                  transition: transform .22s ease; margin-top: 6px; }
+                  transition: transform .25s var(--ease-out); margin-top: 6px; }
     .prop-card.open .prop-arrow { transform: rotate(180deg); }
 
     /* ─ 完了工程トグルボタン (prop header) ─────────────────── */
@@ -153,12 +233,12 @@
     .prop-done-phases-btn:active { background: var(--green-light); color: var(--green); border-color: var(--green-mid); }
 
     /* ─ Phases container ────────────────────────────────────── */
-    .phases-wrap { display: none; border-top: 1px solid var(--border); }
+    .phases-wrap { display: none; }
     .prop-card.open .phases-wrap { display: block; }
 
     /* ─ Progress bar ────────────────────────────────────────── */
-    .prog-row { display: flex; align-items: center; padding: 10px 14px 8px; gap: 10px; }
-    .prog-bg { flex: 1; height: 8px; background: #dde8e2; border-radius: 4px; overflow: hidden; }
+    .prog-row { display: flex; align-items: center; padding: 6px 14px 6px; gap: 10px; }
+    .prog-bg { flex: 1; height: 8px; background: var(--green-light); border-radius: 4px; overflow: hidden; }
     .prog-fill { height: 100%; background: var(--green); border-radius: 4px; transition: width .4s ease;
                  min-width: 0; }
     .prog-lbl { font-family: var(--fm); font-size: 12px; color: var(--green); font-weight: 600;
@@ -180,12 +260,12 @@
                  padding: 2px 8px; border-radius: 10px; }
     .phase-badge { font-size: 11px; padding: 2px 8px; background: var(--green-light);
                    color: var(--green); border-radius: 8px; font-weight: 600; }
-    .phase-arr { width: 13px; height: 13px; color: var(--t3); transition: transform .18s; flex-shrink: 0; }
+    .phase-arr { width: 13px; height: 13px; color: var(--t3); transition: transform .25s var(--ease-out); flex-shrink: 0; }
     .phase-sec.open .phase-arr { transform: rotate(180deg); }
     .phase-all-btn { background: none; border: 1px solid var(--border); border-radius: 6px;
                      padding: 4px 10px; font-size: 11px; color: var(--t2); cursor: pointer;
                      font-family: var(--fp); flex-shrink: 0; white-space: nowrap;
-                     -webkit-tap-highlight-color: transparent; transition: all .15s; min-height: 28px; }
+                     -webkit-tap-highlight-color: transparent; transition: all .2s var(--ease-std); min-height: 28px; }
     .phase-all-btn:active { background: var(--green-light); border-color: var(--green-mid); color: var(--green); }
     /* 工程ヘッダー内：完了タスクトグルボタン */
     .phase-done-btn { background: none; border: none; cursor: pointer; font-size: 11px;
@@ -208,7 +288,7 @@
     .phases-wrap.hide-done-phases .phase-sec.phase-all-done { display: none; }
     .chk { width: 22px; height: 22px; border: 2px solid var(--border); border-radius: 6px;
            flex-shrink: 0; margin-top: 2px; cursor: pointer; display: flex;
-           align-items: center; justify-content: center; transition: all .15s;
+           align-items: center; justify-content: center; transition: all .18s var(--ease-std);
            background: white; -webkit-tap-highlight-color: transparent; }
     .chk:hover:not(.on) { border-color: var(--green-mid); }
     .chk.on { background: var(--green); border-color: var(--green); }
@@ -233,7 +313,7 @@
     .indiv-cnt { font-family: var(--fm); font-size: 11px; color: #92400e;
                  background: #fef3c7; padding: 2px 8px; border-radius: 8px; font-weight: 600; }
     .indiv-sec.open .indiv-arr { transform: rotate(180deg); }
-    .indiv-arr { width: 13px; height: 13px; color: #92400e; transition: transform .18s; flex-shrink: 0; }
+    .indiv-arr { width: 13px; height: 13px; color: #92400e; transition: transform .25s var(--ease-out); flex-shrink: 0; }
     .indiv-body { display: none; }
     .indiv-sec.open .indiv-body { display: block; }
     .indiv-add-row { display: flex; padding: 8px 14px; gap: 6px; background: #fef9ee; border-top: 1px solid #fde68a; }
@@ -265,9 +345,9 @@
 
     /* ─ Master tasks ────────────────────────────────────────── */
     .m-group { background: var(--card); border-radius: var(--radius-card); margin-bottom: 10px;
-               overflow: hidden; box-shadow: var(--shadow-card); border: 1.5px solid var(--border);
-               transition: border-color .15s; }
-    .m-group.open { border-color: #c5dfd0; }
+               overflow: hidden; box-shadow: var(--shadow); border: 1.5px solid var(--border);
+               transition: border-color .2s var(--ease-std), box-shadow .2s var(--ease-std); }
+    .m-group.open { border-color: var(--green-light); box-shadow: var(--shadow-lg); }
     .m-ghdr-new { display: flex; align-items: center; padding: 12px 14px;
                   background: white;
                   cursor: pointer; gap: 10px;
@@ -293,7 +373,7 @@
     .m-ghedit:active { background: rgba(0,104,55,.15); }
     .m-body { display: none; }
     .m-group.open .m-body { display: block; }
-    .m-garr { width: 13px; height: 13px; color: var(--green-mid); transition: transform .18s; }
+    .m-garr { width: 13px; height: 13px; color: var(--green-mid); transition: transform .25s var(--ease-out); }
     .m-group.open .m-garr { transform: rotate(180deg); color: var(--green); }
     .m-row { display: flex; align-items: center; padding: 10px 14px;
              border-bottom: 1px solid var(--border); gap: 8px;
@@ -321,7 +401,7 @@
              border-radius: 8px; cursor: pointer; display: flex; align-items: center;
              justify-content: center; color: var(--t3);
              -webkit-tap-highlight-color: transparent; touch-action: manipulation;
-             transition: all .12s; }
+             transition: all .15s var(--ease-std); }
     .m-btn:hover { background: var(--bg); color: var(--t2); border-color: var(--t3); }
     .m-btn:active { background: var(--bg); }
     .m-btn.del:hover { background: #fff5f5; color: var(--red); border-color: #fca5a5; }
@@ -332,7 +412,7 @@
     .m-add-inp { flex: 1; padding: 9px 12px; border: 1px solid var(--border); border-radius: 8px;
                  font-family: var(--fp); font-size: 13px; color: var(--t1); outline: none;
                  transition: border-color .15s; }
-    .m-add-inp:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(0,104,55,.08); }
+    .m-add-inp:focus { border-color: var(--green); box-shadow: 0 0 0 3px oklch(0.52 0.16 155 / 0.1), 0 0 0 1px var(--green); }
     .m-add-btn { padding: 9px 16px; background: var(--green); color: white; border: none;
                  border-radius: 8px; font-size: 13px; cursor: pointer; flex-shrink: 0;
                  font-weight: 600; transition: background .12s; }
@@ -352,13 +432,13 @@
                      color: var(--green-mid); font-family: var(--fp); font-size: 13px;
                      font-weight: 600; cursor: pointer; display: flex; align-items: center;
                      justify-content: center; gap: 6px; margin-top: 6px;
-                     transition: all .15s; }
+                     transition: all .2s var(--ease-std); }
     .add-phase-btn:hover { background: var(--green-light); border-color: var(--green-mid); color: var(--green); }
     .add-phase-btn:active { background: #d4edda; }
 
     /* ─ Property Management tab ──────────────────────────── */
     .pm-card { background: var(--card); border-radius: var(--radius-card); margin-bottom: 10px;
-               overflow: hidden; box-shadow: var(--shadow-card); padding: 14px 16px;
+               overflow: hidden; box-shadow: var(--shadow); padding: 14px 16px;
                display: flex; align-items: center; gap: 12px; }
     .pm-info { flex: 1; min-width: 0; }
     .pm-name { font-size: 15px; font-weight: 600; }
@@ -375,7 +455,7 @@
 
     /* ─ History timeline ────────────────────────────────────── */
     .h-card { background: var(--card); border-radius: 12px; overflow: hidden;
-              box-shadow: 0 2px 12px rgba(0,0,0,.07); }
+              box-shadow: var(--shadow); }
     .h-row { display: flex; align-items: flex-start; gap: 12px;
              padding: 13px 16px; border-bottom: 1px solid var(--border); }
     .h-row:last-child { border-bottom: none; }
@@ -404,26 +484,12 @@
     .h-before { color: var(--t2); text-decoration: line-through; }
     .h-after  { color: var(--t1); font-weight: 600; }
 
-    /* ─ Priority panel ─────────────────────────────────────── */
-    .prio-panel { background: #fff5f5; border: 1.5px solid #fecaca;
-                  border-radius: 12px; margin-bottom: 12px; overflow: hidden; }
-    .prio-panel-hdr { display: flex; align-items: center; padding: 10px 14px;
-                      cursor: pointer; gap: 8px; user-select: none;
-                      -webkit-tap-highlight-color: transparent; }
-    .prio-panel-hdr:active { background: #fee2e2; }
-    .prio-panel-title { flex: 1; font-size: 13px; font-weight: 700; color: #991b1b;
-                        letter-spacing: .03em; display: flex; align-items: center; gap: 6px; }
-    .prio-cnt-badge { background: #dc2626; color: white; font-size: 11px; font-weight: 700;
-                      padding: 1px 7px; border-radius: 10px; font-family: var(--fm); }
-    .prio-panel-arr { width: 13px; height: 13px; color: #b91c1c; transition: transform .18s; flex-shrink: 0; }
-    .prio-panel.open .prio-panel-arr { transform: rotate(180deg); }
-    .prio-body { display: none; border-top: 1px solid #fecaca; }
-    .prio-panel.open .prio-body { display: block; }
+    /* ─ Priority row (shared by prio tab and old panel) ───── */
     .prio-row { display: flex; align-items: flex-start; gap: 10px;
-                padding: 9px 14px; border-bottom: 1px solid #fee2e2; }
+                padding: 9px 14px; border-bottom: 1px solid var(--border); }
     .prio-row:last-child { border-bottom: none; }
     .prio-row.done .prio-task-name { color: var(--t3); text-decoration: line-through; }
-    .prio-prop { font-size: 11px; color: #b91c1c; font-family: var(--fm);
+    .prio-prop { font-size: 11px; color: var(--green-mid); font-family: var(--fm);
                  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
                  max-width: 90px; flex-shrink: 0; }
     .prio-task-name { flex: 1; font-size: 13px; min-width: 0; word-break: break-all; line-height: 1.5; }
@@ -432,17 +498,20 @@
     .star-btn { width: 28px; height: 28px; background: none; border: none;
                 flex-shrink: 0; cursor: pointer; display: flex; align-items: center;
                 justify-content: center; color: var(--border); margin-top: 1px;
-                -webkit-tap-highlight-color: transparent; transition: color .15s; }
+                -webkit-tap-highlight-color: transparent; transition: color .2s var(--ease-std); }
     .star-btn.on { color: #dc2626; }
     .star-btn:active { transform: scale(1.3); }
 
     /* ─ Modal ───────────────────────────────────────────────── */
     .modal-bg { position: fixed; inset: 0; background: rgba(15,23,42,.45);
-                z-index: 300; display: none; align-items: center; justify-content: center; padding: 20px; }
-    .modal-bg.on { display: flex; }
+                backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+                z-index: 300; display: none; align-items: center; justify-content: center;
+                padding: 20px; padding-bottom: calc(20px + env(safe-area-inset-bottom, 0px)); }
+    .modal-bg.on { display: flex; animation: ceFadeIn .2s var(--ease-out); }
     .modal-sheet { background: var(--card); border-radius: 20px;
                    width: 100%; max-width: 420px; padding: 0;
-                   box-shadow: 0 20px 60px rgba(0,0,0,.2); overflow: hidden; }
+                   box-shadow: var(--shadow-lg), 0 20px 60px rgba(0,0,0,.15); overflow: hidden; }
+    .modal-bg.on .modal-sheet { animation: ceSlideUp .3s var(--ease-out); }
     .modal-head { padding: 18px 20px 14px; border-bottom: 1px solid var(--border);
                   display: flex; align-items: center; justify-content: space-between; }
     .modal-title { font-size: 15px; font-weight: 700; }
@@ -456,10 +525,10 @@
     .field input[type=text], .field input[type=number], .field input[type=date], .field select {
       width: 100%; padding: 11px 14px; border: 1.5px solid var(--border); border-radius: 10px;
       font-family: var(--fp); font-size: 14px; color: var(--t1); outline: none;
-      transition: border-color .18s, box-shadow .18s; }
+      transition: border-color .2s var(--ease-std), box-shadow .2s var(--ease-std); }
     .field input:focus, .field select:focus {
       border-color: var(--green);
-      box-shadow: 0 0 0 3px rgba(0,104,55,.1); }
+      box-shadow: 0 0 0 3px oklch(0.52 0.16 155 / 0.12), 0 0 0 1px var(--green); }
     .chk-field { display: flex; align-items: center; gap: 8px; }
     .chk-field input[type=checkbox] { width: 18px; height: 18px; accent-color: var(--green); }
     .modal-actions { display: flex; gap: 8px; margin-top: 20px; }
@@ -481,13 +550,151 @@
            padding: 10px 14px; border-radius: 8px; font-size: 12px; margin-bottom: 10px; }
 
     /* ─ Toast ───────────────────────────────────────────────── */
-    .toast { position: fixed; bottom: 24px; left: 50%;
+    .toast { position: fixed; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); left: 50%;
              transform: translateX(-50%) translateY(80px);
              background: var(--t1); color: white; padding: 9px 18px;
              border-radius: 20px; font-size: 14px; z-index: 400;
-             transition: transform .26s cubic-bezier(.34,1.56,.64,1);
+             box-shadow: var(--shadow-lg);
+             transition: transform .3s var(--ease-spring);
              white-space: nowrap; pointer-events: none; }
     .toast.on { transform: translateX(-50%) translateY(0); }
+
+    /* ─ Main Tabs (優先タスク / 物件一覧 / 個別タスク) ─────── */
+    .main-tabs { position: sticky; top: 56px; z-index: 90; background: var(--bg);
+                 display: flex; border-bottom: 1px solid var(--border);
+                 padding: 0 12px; max-width: 540px; margin: 0 auto; }
+    @media (min-width: 768px)  { .main-tabs { max-width: 580px; } }
+    @media (min-width: 1024px) { .main-tabs { max-width: 620px; } }
+    .main-tab { flex: 1; padding: 12px 4px 11px; background: none; border: none;
+                color: var(--t2); font-family: var(--fp); font-size: 13px; font-weight: 600;
+                cursor: pointer; border-bottom: 2.5px solid transparent;
+                transition: color .2s var(--ease-std), border-color .2s var(--ease-std);
+                -webkit-tap-highlight-color: transparent; white-space: nowrap;
+                text-align: center; }
+    .main-tab.active { border-bottom-color: var(--green-mid); color: var(--green-dark); font-weight: 700; }
+
+    /* ─ Property filter pills (物件一覧タブ内) ──────── */
+    .prop-jump-bar { position: sticky; top: 98px; z-index: 70; background: var(--bg);
+                     padding: 6px 12px; display: flex; gap: 4px; overflow-x: auto;
+                     -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+    .prop-jump-bar::-webkit-scrollbar { display: none; }
+    .prop-jump-pill { flex-shrink: 0; padding: 5px 10px; border-radius: 12px;
+                      border: 1px solid var(--border); background: var(--card);
+                      font-size: 11px; font-family: var(--fp); color: var(--t2);
+                      cursor: pointer; -webkit-tap-highlight-color: transparent;
+                      transition: all .2s var(--ease-std); }
+    .prop-jump-pill:active { background: var(--green-light); border-color: var(--green-mid); color: var(--green-dark); }
+    .prop-jump-pill.active { background: var(--green-mid); color: white; border-color: var(--green-mid); font-weight: 600; }
+
+    /* ─ 個別タスク tab ────────────────────────────────────── */
+    .indiv-tab-group { margin-bottom: 10px; background: var(--card); border-radius: 14px;
+                       overflow: hidden; box-shadow: var(--shadow); }
+    .indiv-tab-ghdr { padding: 10px 14px 10px 17px; font-weight: 700; font-size: 13px;
+                      border-bottom: 1px solid var(--border); display: flex;
+                      align-items: center; gap: 8px; position: relative;
+                      cursor: pointer; -webkit-tap-highlight-color: transparent;
+                      font-family: var(--fp); }
+    .indiv-tab-ghdr::before { content: ''; width: 3px; background: var(--amber);
+                              position: absolute; left: 0; top: 0; bottom: 0; border-radius: 0 2px 2px 0; }
+    .indiv-tab-ghdr-name { flex: 1; }
+    .indiv-tab-cnt { font-size: 11px; color: var(--t3); font-weight: 500; font-family: var(--fm); }
+    .indiv-tab-body { }
+    .indiv-tab-group.collapsed .indiv-tab-body { display: none; }
+    .indiv-tab-group.collapsed .indiv-tab-add-row { display: none; }
+    .indiv-tab-arr { width: 13px; height: 13px; color: var(--t3);
+                      transition: transform .25s var(--ease-out); flex-shrink: 0; }
+    .indiv-tab-group.collapsed .indiv-tab-arr { transform: rotate(-90deg); }
+    .indiv-tab-task { display: flex; align-items: center; gap: 10px; padding: 10px 14px;
+                      border-bottom: 1px solid var(--border); font-size: 13px; }
+    .indiv-tab-task:last-child { border-bottom: none; }
+    .indiv-tab-task.done .indiv-tab-tname { text-decoration: line-through; color: var(--t3); }
+    .indiv-tab-tname { flex: 1; min-width: 0; word-break: break-all; line-height: 1.5; }
+    .indiv-tab-add-row { display: flex; padding: 8px 14px; gap: 6px; border-top: 1px solid var(--border);
+                         background: rgba(245,158,11,.04); }
+    .indiv-tab-add-inp { flex: 1; padding: 8px 12px; border: 1px solid var(--border); border-radius: 7px;
+                         font-size: 13px; font-family: var(--fp); outline: none; background: var(--card); }
+    .indiv-tab-add-inp:focus { border-color: var(--amber); }
+    .indiv-tab-add-btn { padding: 8px 16px; background: #f59e0b; color: white; border: none;
+                         border-radius: 7px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: var(--fp); }
+    .indiv-tab-add-btn:active { background: #d97706; }
+    .indiv-tab-empty { text-align: center; padding: 48px 20px; color: var(--t3); }
+    .indiv-tab-empty svg { display: block; margin: 0 auto 12px; opacity: .4; width: 40px; height: 40px; }
+    .indiv-tab-empty-txt { font-size: 14px; font-weight: 500; }
+    .indiv-tab-empty-sub { font-size: 12px; margin-top: 4px; }
+
+    /* ─ Options menu (bottom sheet) ────────────────────────── */
+    .h-opt-btn { background: none; border: none; padding: 6px 8px; cursor: pointer;
+                 color: var(--t2); display: flex; align-items: center; justify-content: center;
+                 border-radius: 8px; -webkit-tap-highlight-color: transparent; }
+    .h-opt-btn:active { background: var(--bg); }
+    .opt-menu-bg { position: fixed; inset: 0; z-index: 200; background: rgba(15,23,42,.35);
+                   backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+                   display: none; }
+    .opt-menu-bg.on { display: block; }
+    .opt-menu { position: fixed; bottom: 0; left: 0; right: 0; background: var(--card);
+                border-radius: 16px 16px 0 0; padding: 8px 0 calc(16px + env(safe-area-inset-bottom, 0px));
+                box-shadow: 0 -4px 30px rgba(0,0,0,.12);
+                transform: translateY(100%); transition: transform .3s var(--ease-out); }
+    .opt-menu-bg.on .opt-menu { transform: translateY(0); }
+    .opt-menu-title { padding: 12px 20px 8px; font-size: 12px; font-weight: 700; color: var(--t3);
+                      letter-spacing: .05em; text-transform: uppercase; }
+    .opt-menu-item { width: 100%; background: none; border: none; text-align: left;
+                     padding: 14px 20px; font-size: 15px; color: var(--t1); font-family: var(--fp);
+                     cursor: pointer; display: flex; gap: 12px; align-items: center;
+                     -webkit-tap-highlight-color: transparent; }
+    .opt-menu-item:active { background: var(--bg); }
+    .opt-menu-item svg { color: var(--t3); flex-shrink: 0; }
+
+    /* ─ Priority tab (grouped by property) ─────────────────── */
+    .prio-group { margin-bottom: 10px; background: var(--card); border-radius: 14px;
+                  overflow: hidden; box-shadow: var(--shadow); }
+    .prio-group-hdr { padding: 10px 14px 10px 17px;
+                      font-weight: 700; font-size: 13px; background: var(--card);
+                      border-bottom: 1px solid var(--border); z-index: 5;
+                      display: flex; align-items: center; gap: 8px;
+                      position: relative; cursor: pointer;
+                      -webkit-tap-highlight-color: transparent; font-family: var(--fp); }
+    .prio-group-hdr::before { content: ''; width: 3px; background: var(--red);
+                              position: absolute; left: 0; top: 0; bottom: 0; border-radius: 0 2px 2px 0; }
+    .prio-group-hdr-name { flex: 1; }
+    .prio-group-cnt { font-size: 11px; color: var(--t3); font-weight: 500; font-family: var(--fm); }
+    .prio-group-arr { width: 13px; height: 13px; color: var(--t3);
+                      transition: transform .25s var(--ease-out); flex-shrink: 0; }
+    .prio-group.collapsed .prio-group-arr { transform: rotate(-90deg); }
+    .prio-group.collapsed .prio-group-body { display: none; }
+    .prio-group-body .prio-row { border-bottom: 1px solid var(--border); }
+    .prio-group-body .prio-row:last-child { border-bottom: none; }
+    .prio-empty { text-align: center; padding: 48px 20px; color: var(--t3); }
+    .prio-empty svg { display: block; margin: 0 auto 12px; opacity: .4; width: 40px; height: 40px; }
+    .prio-empty-txt { font-size: 14px; font-weight: 500; }
+    .prio-empty-sub { font-size: 12px; margin-top: 4px; }
+
+    /* ─ Prop header when card is open ──────────────────────── */
+    .prop-card.open .prop-hdr { background: var(--card); border-bottom: 1px solid var(--border); }
+    /* ─ Property card filter transition ──────────────────── */
+    .prop-card { transition: border-color .2s var(--ease-std), box-shadow .2s var(--ease-std),
+                             opacity .25s var(--ease-std), max-height .3s var(--ease-std); }
+    .prop-card.filtered-out { display: none; }
+    /* ─ Pane content fade transition ─────────────────────── */
+    .pane { animation: paneFadeIn .2s var(--ease-std); }
+    @keyframes paneFadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+    /* ─ Dark mode additions ────────────────────────────────── */
+    @media (prefers-color-scheme: dark) {
+      .opt-menu-bg { background: rgba(0,0,0,.5); }
+      .opt-menu { background: var(--card); box-shadow: 0 -4px 30px rgba(0,0,0,.4); }
+      .opt-menu-item:active { background: var(--bg); }
+      .prio-group { background: var(--card); }
+      .prio-group-hdr { background: var(--card); }
+      .main-tab.active { color: var(--green); }
+      .prop-jump-pill { background: var(--card); border-color: var(--border); }
+      .prop-jump-pill.active { background: var(--green-mid); color: white; border-color: var(--green-mid); }
+      .indiv-tab-group { background: var(--card); }
+      .indiv-tab-ghdr { border-color: var(--border); }
+      .indiv-tab-add-row { background: rgba(245,158,11,.08); }
+      .indiv-tab-add-inp { background: var(--card); border-color: var(--border); }
+      .prio-group-hdr::before { background: var(--red); }
+    }
   </style>
 </head>
 <body>
@@ -553,7 +760,7 @@
 <!-- ─── Main App ──────────────────────────────────────────── -->
 <div id="main-app" style="display:none">
 
-<header class="hdr">
+<header class="hdr" style="border-radius:0;">
   <div class="hdr-top">
     <div class="hdr-info" onclick="hdrTap()">
       <div class="hdr-title">現場タスク管理</div>
@@ -562,16 +769,62 @@
     <button class="btn-xs" onclick="openChangeKeyModal()" style="padding:6px 10px;font-size:11px;">
       <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
     </button>
+    <button class="h-opt-btn" onclick="toggleOptionsMenu()">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
+    </button>
   </div>
-  <nav class="tabs">
-    <button class="tab on"  onclick="switchTab('props',this)">物件一覧</button>
-    <button class="tab"     onclick="switchTab('master',this)">マスタータスク管理</button>
-    <button class="tab"     onclick="switchTab('history',this)">履歴</button>
-  </nav>
 </header>
 
-<!-- ─── 物件一覧 ─────────────────────────────────────────────── -->
-<section id="pane-props" class="pane on">
+<!-- Options bottom sheet menu -->
+<div class="opt-menu-bg" id="opt-menu-bg" onclick="closeOptionsMenu()">
+  <div class="opt-menu" onclick="event.stopPropagation()">
+    <div class="opt-menu-title">メニュー</div>
+    <button class="opt-menu-item" onclick="closeOptionsMenu();showMasterPane()">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 14l2 2 4-4"/></svg>
+      マスタータスク管理
+    </button>
+    <button class="opt-menu-item" onclick="closeOptionsMenu();showHistoryPane()">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      履歴
+    </button>
+    <button class="opt-menu-item" onclick="closeOptionsMenu();reloadAll()">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+      再読み込み
+    </button>
+  </div>
+</div>
+
+<!-- Main tabs -->
+<div class="main-tabs" id="main-tabs">
+  <button class="main-tab active" data-tab="props" onclick="switchMainTab('props')">物件一覧 <span id="props-tab-cnt"></span></button>
+  <button class="main-tab" data-tab="prio" onclick="switchMainTab('prio')">優先タスク <span id="prio-tab-cnt"></span></button>
+  <button class="main-tab" data-tab="indiv" onclick="switchMainTab('indiv')">個別タスク <span id="indiv-tab-cnt"></span></button>
+</div>
+
+<!-- ─── 優先タスクタブ ─────────────────────────────────────────── -->
+<section id="prio-tab-content" class="pane" style="display:none">
+  <div id="prio-tab-body">
+    <div class="prio-empty">
+      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="12,2 22,12 12,22 2,12"/></svg>
+      <div class="prio-empty-txt">優先タスクはありません</div>
+      <div class="prio-empty-sub">タスク横のダイヤマークで優先設定できます</div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── 個別タスクタブ ─────────────────────────────────────────── -->
+<section id="indiv-tab-content" class="pane" style="display:none">
+  <div id="indiv-tab-body">
+    <div class="indiv-tab-empty">
+      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="12,2 22,12 12,22 2,12"/></svg>
+      <div class="indiv-tab-empty-txt">個別タスクはありません</div>
+      <div class="indiv-tab-empty-sub">物件を開いて個別タスクを追加できます</div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── 物件一覧タブ ─────────────────────────────────────────── -->
+<section id="props-tab-content" class="pane on">
   <div class="toolbar">
     <span class="tbar-meta" id="lbl-upd">読み込み中…</span>
     <div style="display:flex;gap:6px;align-items:center">
@@ -596,28 +849,18 @@
       <button class="sort-btn" id="sort-btn-name"     onclick="setSortOrder('name')">名前順</button>
     </div>
   </div>
-  <!-- 優先タスクパネル -->
-  <div id="prio-panel" class="prio-panel" style="display:none">
-    <div class="prio-panel-hdr" onclick="togglePrioPanel()">
-      <div class="prio-panel-title">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="#dc2626" stroke="none">
-          <polygon points="12,2 22,12 12,22 2,12"/>
-        </svg>
-        優先タスク
-        <span class="prio-cnt-badge" id="prio-cnt">0</span>
-      </div>
-      <svg class="prio-panel-arr" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-        <polyline points="6,9 12,15 18,9"/>
-      </svg>
-    </div>
-    <div class="prio-body" id="prio-body"></div>
-  </div>
+  <div class="prop-jump-bar" id="prop-jump-bar" style="display:none"></div>
   <div id="props-list"><div class="center"><div class="spin"></div></div></div>
   <div id="hidden-props-note" style="display:none;text-align:center;font-size:11px;color:var(--t3);padding:6px 0 12px;"></div>
 </section>
 
 <!-- ─── マスタータスク管理 ─────────────────────────────────────── -->
-<section id="pane-master" class="pane">
+<section id="pane-master" class="pane" style="display:none">
+  <div style="margin-bottom:10px;">
+    <button class="btn-xs" onclick="backToMainTabs()" style="margin-bottom:10px;gap:4px">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15,18 9,12 15,6"/></svg>戻る
+    </button>
+  </div>
   <div style="background:var(--green-mid);border-radius:var(--radius-card);padding:14px 16px;margin-bottom:10px;box-shadow:0 4px 20px rgba(0,77,41,.15);">
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
       <div style="width:34px;height:34px;background:rgba(255,255,255,.2);border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
@@ -651,7 +894,12 @@
 </section>
 
 <!-- ─── 変更履歴 ─────────────────────────────────────────────── -->
-<section id="pane-history" class="pane">
+<section id="pane-history" class="pane" style="display:none">
+  <div style="margin-bottom:10px;">
+    <button class="btn-xs" onclick="backToMainTabs()" style="gap:4px">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15,18 9,12 15,6"/></svg>戻る
+    </button>
+  </div>
   <div class="toolbar">
     <span class="tbar-meta">変更履歴 最大100件</span>
     <button class="btn-xs" onclick="loadHistory()">
@@ -1163,15 +1411,283 @@ async function api(params, timeoutMs = 20000) {
 }
 
 // ═══════════════════════════════════════════════════════
-//  Tab switch
+//  Main Tab switch (優先タスク / 物件一覧)
 // ═══════════════════════════════════════════════════════
+function switchMainTab(tab) {
+  document.querySelectorAll('.main-tab').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+  ['prio','props','indiv'].forEach(t => {
+    const el = document.getElementById(t + '-tab-content');
+    if (el) { el.style.display = t === tab ? '' : 'none'; el.classList.toggle('on', t === tab); }
+  });
+  // Hide master/history panes when switching main tabs
+  document.getElementById('pane-master').classList.remove('on');
+  document.getElementById('pane-master').style.display = 'none';
+  document.getElementById('pane-history').classList.remove('on');
+  document.getElementById('pane-history').style.display = 'none';
+  document.getElementById('main-tabs').style.display = '';
+  localStorage.setItem('taskApp_mainTab', tab);
+  if (tab === 'prio') renderPrioTab();
+  if (tab === 'indiv') renderIndivTab();
+}
+
+// Old switchTab kept for master/history pane navigation
 function switchTab(name, btn) {
-  document.querySelectorAll('.tab').forEach(b => b.classList.remove('on'));
-  document.querySelectorAll('.pane').forEach(p => p.classList.remove('on'));
-  btn.classList.add('on');
-  document.getElementById('pane-' + name).classList.add('on');
-  if (name === 'master'  && !masterInit)  loadMaster();
-  if (name === 'history' && !historyInit) loadHistory();
+  // No longer used from tabs, but kept for compatibility
+}
+
+// ═══════════════════════════════════════════════════════
+//  Options menu
+// ═══════════════════════════════════════════════════════
+function toggleOptionsMenu() {
+  document.getElementById('opt-menu-bg').classList.toggle('on');
+}
+function closeOptionsMenu() {
+  document.getElementById('opt-menu-bg').classList.remove('on');
+}
+function hideAllMainTabs() {
+  ['prio','props','indiv'].forEach(t => {
+    const el = document.getElementById(t + '-tab-content');
+    if (el) { el.style.display = 'none'; el.classList.remove('on'); }
+  });
+  document.getElementById('main-tabs').style.display = 'none';
+}
+function showMasterPane() {
+  hideAllMainTabs();
+  document.getElementById('pane-history').style.display = 'none';
+  document.getElementById('pane-history').classList.remove('on');
+  document.getElementById('pane-master').style.display = '';
+  document.getElementById('pane-master').classList.add('on');
+  if (!masterInit) loadMaster();
+}
+function showHistoryPane() {
+  hideAllMainTabs();
+  document.getElementById('pane-master').style.display = 'none';
+  document.getElementById('pane-master').classList.remove('on');
+  document.getElementById('pane-history').style.display = '';
+  document.getElementById('pane-history').classList.add('on');
+  if (!historyInit) loadHistory();
+}
+function backToMainTabs() {
+  const lastTab = localStorage.getItem('taskApp_mainTab') || 'props';
+  document.getElementById('pane-master').style.display = 'none';
+  document.getElementById('pane-master').classList.remove('on');
+  document.getElementById('pane-history').style.display = 'none';
+  document.getElementById('pane-history').classList.remove('on');
+  document.getElementById('main-tabs').style.display = '';
+  switchMainTab(lastTab);
+}
+
+// ═══════════════════════════════════════════════════════
+//  Priority tab rendering (grouped by property)
+// ═══════════════════════════════════════════════════════
+function renderPrioTab() {
+  const container = document.getElementById('prio-tab-body');
+  if (!container) return;
+  const groups = {};
+  Object.entries(taskCache).forEach(([propName, tasks]) => {
+    const prioTasks = (tasks || []).filter(t => t.priority);
+    if (prioTasks.length > 0) groups[propName] = prioTasks;
+  });
+
+  // Update tab badge
+  const totalPrio = Object.values(groups).reduce((s, ts) => s + ts.filter(t => !t.done).length, 0);
+  const prioCntEl = document.getElementById('prio-tab-cnt');
+  if (prioCntEl) prioCntEl.textContent = totalPrio > 0 ? '(' + totalPrio + ')' : '';
+
+  if (Object.keys(groups).length === 0) {
+    container.innerHTML = '<div class="prio-empty">'
+      +'<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="12,2 22,12 12,22 2,12"/></svg>'
+      +'<div class="prio-empty-txt">優先タスクはありません</div>'
+      +'<div class="prio-empty-sub">タスク横のダイヤマークで優先設定できます</div>'
+    +'</div>';
+    return;
+  }
+
+  let html = '';
+  Object.entries(groups).forEach(([propName, tasks]) => {
+    const doneCount = tasks.filter(t => t.done).length;
+    const gid = 'prio-g-' + slug(propName);
+    html += '<div class="prio-group" id="'+gid+'">'
+      +'<div class="prio-group-hdr" onclick="document.getElementById(\''+gid+'\').classList.toggle(\'collapsed\')">'
+        +'<span class="prio-group-hdr-name">'+esc(propName)+'</span>'
+        +'<span class="prio-group-cnt">'+doneCount+'/'+tasks.length+'</span>'
+        +'<svg class="prio-group-arr" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6,9 12,15 18,9"/></svg>'
+      +'</div>'
+      +'<div class="prio-group-body">'+tasks.map(t => prioTaskRowHTML(t, propName)).join('')+'</div>'
+    +'</div>';
+  });
+  container.innerHTML = html;
+}
+
+function prioTaskRowHTML(t, propName) {
+  const safeId = esc(t.id);
+  const safeProp = esc(propName);
+  const safeCid = 'pc-'+slug(propName);
+  return '<div class="prio-row'+(t.done?' done':'')+'" id="prio2-'+safeId+'">'
+    +'<div class="chk'+(t.done?' on':'')+'" style="width:17px;height:17px;border-radius:4px;flex-shrink:0;margin-top:2px" onclick="toggleTask(\''+safeId+'\',\''+safeProp+'\',\''+safeCid+'\')">'
+      +'<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3.5"><polyline points="20,6 9,17 4,12"/></svg>'
+    +'</div>'
+    +'<div class="prio-task-name">'+esc(t.name)+'</div>'
+    +'<span class="prio-phase-tag">'+esc(t.phase)+'</span>'
+  +'</div>';
+}
+
+function updateTabBadges() {
+  // Priority count
+  let prioCount = 0;
+  Object.values(taskCache).forEach(tasks => {
+    (tasks || []).forEach(t => { if (t.priority && !t.done) prioCount++; });
+  });
+  const prioCntEl = document.getElementById('prio-tab-cnt');
+  if (prioCntEl) prioCntEl.textContent = prioCount > 0 ? '(' + prioCount + ')' : '';
+  // Props count
+  const propsCntEl = document.getElementById('props-tab-cnt');
+  if (propsCntEl) propsCntEl.textContent = propData.length > 0 ? '(' + propData.length + ')' : '';
+  // Individual task count
+  let indivCount = 0;
+  Object.values(taskCache).forEach(tasks => {
+    (tasks || []).forEach(t => { if (t.type === 'individual' && !t.done) indivCount++; });
+  });
+  const indivCntEl = document.getElementById('indiv-tab-cnt');
+  if (indivCntEl) indivCntEl.textContent = indivCount > 0 ? '(' + indivCount + ')' : '';
+}
+
+// ═══════════════════════════════════════════════════════
+//  個別タスクタブ rendering
+// ═══════════════════════════════════════════════════════
+function renderIndivTab() {
+  const container = document.getElementById('indiv-tab-body');
+  if (!container) return;
+  const groups = {};
+  Object.entries(taskCache).forEach(([propName, tasks]) => {
+    const indivTasks = (tasks || []).filter(t => t.type === 'individual');
+    if (indivTasks.length > 0 || propData.some(p => p.name === propName)) {
+      groups[propName] = indivTasks;
+    }
+  });
+  // Also include properties that have no cached tasks yet
+  propData.forEach(p => {
+    if (!groups[p.name]) groups[p.name] = [];
+  });
+
+  // Update tab badge
+  let indivCount = 0;
+  Object.values(groups).forEach(ts => { ts.forEach(t => { if (!t.done) indivCount++; }); });
+  const indivCntEl = document.getElementById('indiv-tab-cnt');
+  if (indivCntEl) indivCntEl.textContent = indivCount > 0 ? '(' + indivCount + ')' : '';
+
+  if (Object.keys(groups).length === 0) {
+    container.innerHTML = '<div class="indiv-tab-empty">'
+      +'<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="12,2 22,12 12,22 2,12"/></svg>'
+      +'<div class="indiv-tab-empty-txt">個別タスクはありません</div>'
+      +'<div class="indiv-tab-empty-sub">物件を開いて個別タスクを追加できます</div>'
+    +'</div>';
+    return;
+  }
+
+  let html = '';
+  Object.entries(groups).forEach(([propName, tasks]) => {
+    const doneCount = tasks.filter(t => t.done).length;
+    const undoneCount = tasks.filter(t => !t.done).length;
+    const gid = 'indiv-g-' + slug(propName);
+    html += '<div class="indiv-tab-group" id="'+gid+'">'
+      +'<div class="indiv-tab-ghdr" onclick="document.getElementById(\''+gid+'\').classList.toggle(\'collapsed\')">'
+        +'<span class="indiv-tab-ghdr-name">'+esc(propName)+'</span>'
+        +'<span class="indiv-tab-cnt">'+doneCount+'/'+tasks.length+'</span>'
+        +'<svg class="indiv-tab-arr" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6,9 12,15 18,9"/></svg>'
+      +'</div>'
+      +'<div class="indiv-tab-body">';
+    if (tasks.length > 0) {
+      html += tasks.sort((a,b)=>a.order-b.order).map(t => indivTabTaskHTML(t, propName)).join('');
+    } else {
+      html += '<div style="padding:12px 14px;font-size:12px;color:var(--t3)">個別タスクはまだありません</div>';
+    }
+    html += '<div class="indiv-tab-add-row">'
+      +'<input class="indiv-tab-add-inp" id="'+gid+'-inp" placeholder="個別タスクを入力...">'
+      +'<button class="indiv-tab-add-btn" onclick="addIndivTaskFromTab(\''+esc(propName)+'\',\''+gid+'\')">追加</button>'
+    +'</div></div></div>';
+  });
+  container.innerHTML = html;
+}
+
+function indivTabTaskHTML(t, propName) {
+  const cid = 'pc-' + slug(propName);
+  return '<div class="indiv-tab-task'+(t.done?' done':'')+'" id="indiv-t-'+t.id+'">'
+    +'<div class="chk'+(t.done?' on':'')+'" style="width:17px;height:17px;border-radius:4px;flex-shrink:0" onclick="toggleTask(\''+esc(t.id)+'\',\''+esc(propName)+'\',\''+cid+'\')">'
+      +'<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3.5"><polyline points="20,6 9,17 4,12"/></svg>'
+    +'</div>'
+    +'<div class="indiv-tab-tname">'+esc(t.name)+'</div>'
+    +'<button class="indiv-del-btn" title="削除" onclick="deleteIndivTask(\''+esc(t.id)+'\',\''+esc(propName)+'\',\''+cid+'\')" style="margin-left:4px">'
+      +'<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3,6 5,6 21,6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>'
+    +'</button>'
+  +'</div>';
+}
+
+async function addIndivTaskFromTab(propName, gid) {
+  const inp = document.getElementById(gid + '-inp');
+  const name = inp.value.trim();
+  if (!name) { showToast('タスク名を入力してください'); return; }
+  inp.value = '';
+  const cid = 'pc-' + slug(propName);
+  try {
+    const r = await api({ mode:'addTask', property:propName, name, phase:'個別タスク', type:'individual' });
+    const newTask = { id:r.id, property:propName, name, phase:'個別タスク', priority:false, done:false, due:'', order:999, type:'individual' };
+    if (!taskCache[propName]) taskCache[propName] = [];
+    taskCache[propName].push(newTask);
+    saveTaskCache();
+    renderIndivTab();
+    // Also update prop card if open
+    const wrap = document.getElementById(cid + '-pw');
+    if (wrap && document.getElementById(cid) && document.getElementById(cid).classList.contains('open')) {
+      renderPropTasks(propName, cid, taskCache[propName], wrap);
+    }
+    updateTabBadges();
+    showToast('個別タスクを追加しました');
+  } catch(e) {
+    showToast('エラー: ' + e.message);
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+//  物件フィルターバー
+// ═══════════════════════════════════════════════════════
+let activePropFilter = null; // null = show all
+
+function renderPropJumpBar() {
+  const bar = document.getElementById('prop-jump-bar');
+  if (!bar) return;
+  const cards = [...document.querySelectorAll('#props-list .prop-card')];
+  if (cards.length < 2) { bar.style.display = 'none'; return; }
+  bar.style.display = '';
+  let html = '<button class="prop-jump-pill'+(activePropFilter === null ? ' active' : '')+'" onclick="filterProp(null)">全て</button>';
+  html += cards.map(c => {
+    const name = c.dataset.prop;
+    const isActive = activePropFilter === name;
+    return '<button class="prop-jump-pill'+(isActive ? ' active' : '')+'" onclick="filterProp(\''+esc(name)+'\')">' + esc(name) + '</button>';
+  }).join('');
+  bar.innerHTML = html;
+}
+
+function filterProp(propName) {
+  activePropFilter = propName;
+  const cards = [...document.querySelectorAll('#props-list .prop-card')];
+  cards.forEach(c => {
+    if (propName === null || c.dataset.prop === propName) {
+      c.classList.remove('filtered-out');
+    } else {
+      c.classList.add('filtered-out');
+    }
+  });
+  // Update pill states
+  const bar = document.getElementById('prop-jump-bar');
+  if (bar) {
+    bar.querySelectorAll('.prop-jump-pill').forEach(pill => {
+      const pillText = pill.textContent;
+      const isAll = pillText === '全て';
+      const isActive = (propName === null && isAll) || pillText === propName;
+      pill.classList.toggle('active', isActive);
+    });
+  }
 }
 
 // ═══════════════════════════════════════════════════════
@@ -1241,6 +1757,7 @@ function setSortOrder(order) {
 }
 
 function renderProps(props) {
+  activePropFilter = null; // Reset filter when re-rendering
   const el = document.getElementById('props-list');
   if (!props || props.length === 0) {
     el.innerHTML = '<div class="center"><p style="font-size:13px;margin-top:8px">物件がありません。右上の「物件追加」から登録してください。</p></div>';
@@ -1268,6 +1785,8 @@ function renderProps(props) {
     note.style.display = hiddenCnt > 0 ? 'block' : 'none';
     note.textContent = '引渡し済み ' + hiddenCnt + '件を非表示中';
   }
+  updateTabBadges();
+  renderPropJumpBar();
 }
 
 function propCardHTML(p) {
@@ -1593,9 +2112,13 @@ async function deleteIndivTask(id, propName, cid) {
       taskCache[propName] = taskCache[propName].filter(t => t.id !== id);
       saveTaskCache();
     }
-    renderPropTasks(propName, cid, taskCache[propName] || [], document.getElementById(cid+'-pw'));
+    const wrap = document.getElementById(cid+'-pw');
+    if (wrap && document.getElementById(cid) && document.getElementById(cid).classList.contains('open')) {
+      renderPropTasks(propName, cid, taskCache[propName] || [], wrap);
+    }
     refreshProgBar(propName, cid);
     refreshPrioPanel();
+    renderIndivTab();
     showToast('個別タスクを削除しました');
   } catch(e) {
     showToast('エラー: ' + e.message);
@@ -1624,14 +2147,20 @@ async function toggleTask(id, propName, cid) {
     const was = t ? t.done : false;
     const next = !was;
     if (t) t.done = next;
+    refreshProgBar(propName, cid);
+    checkAllDone(propName, cid);
     refreshPrioPanel();
+    updateTabBadges();
     saveTaskCache();
     try {
       await api({ mode:'updateTask', id, field:'done', value:String(next) });
       showToast(next ? '完了にしました' : '未完了に戻しました');
     } catch(e) {
       if (t) t.done = was;
+      refreshProgBar(propName, cid);
+      checkAllDone(propName, cid);
       refreshPrioPanel();
+      updateTabBadges();
       saveTaskCache();
       showToast('エラー: 更新できませんでした');
     }
@@ -1758,24 +2287,15 @@ function checkAllDone(propName, cid) {
 // ─ 優先タスク パネル ──────────────────────────────────────────
 const PRIO_CACHE_KEY = 'prioTasksCache_dist';
 
-function prioPanelRowHTML(t) {
-  return '<div class="prio-row'+(t.done?' done':'')+'" id="prio-'+t.id+'">'
-    +'<div class="chk'+(t.done?' on':'')+'" style="width:17px;height:17px;border-radius:4px;flex-shrink:0;margin-top:2px" onclick="toggleTask(\''+esc(t.id)+'\',\''+esc(t.propName)+'\',\'pc-'+slug(t.propName)+'\')">'
-      +'<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3.5"><polyline points="20,6 9,17 4,12"/></svg>'
-    +'</div>'
-    +'<div class="prio-task-name">'+esc(t.name)+'</div>'
-    +'<div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px;flex-shrink:0">'
-      +'<span class="prio-prop">'+esc(t.propName)+'</span>'
-      +'<span class="prio-phase-tag">'+esc(t.phase)+'</span>'
-    +'</div>'
-  +'</div>';
-}
-
 function refreshPrioPanel() {
-  const panel = document.getElementById('prio-panel');
-  const body  = document.getElementById('prio-body');
-  const cntB  = document.getElementById('prio-cnt');
-  if (!panel) return;
+  // Update the priority tab view (grouped by property)
+  const prioTabVisible = document.getElementById('prio-tab-content') && document.getElementById('prio-tab-content').style.display !== 'none';
+  if (prioTabVisible) renderPrioTab();
+  // Update the indiv tab view if visible
+  const indivTabVisible = document.getElementById('indiv-tab-content') && document.getElementById('indiv-tab-content').style.display !== 'none';
+  if (indivTabVisible) renderIndivTab();
+  updateTabBadges();
+  // Save prio cache for quick restore
   const rows = [];
   Object.entries(taskCache).forEach(([propName, tasks]) => {
     (tasks || []).forEach(t => {
@@ -1785,26 +2305,33 @@ function refreshPrioPanel() {
   if (Object.keys(taskCache).length > 0) {
     try { localStorage.setItem(PRIO_CACHE_KEY, JSON.stringify(rows)); } catch(e) {}
   }
-  cntB.textContent = rows.length;
-  panel.style.display = rows.length > 0 ? '' : 'none';
-  if (rows.length === 0) return;
-  body.innerHTML = rows.map(prioPanelRowHTML).join('');
 }
 
 function restorePrioPanelFromCache() {
   try {
     const cached = JSON.parse(localStorage.getItem(PRIO_CACHE_KEY) || '[]');
     if (cached.length === 0) return;
-    const panel = document.getElementById('prio-panel');
-    const body  = document.getElementById('prio-body');
-    const cntB  = document.getElementById('prio-cnt');
-    cntB.textContent = cached.length;
-    panel.style.display = '';
-    body.innerHTML = cached.map(prioPanelRowHTML).join('');
+    // Group cached prio tasks by property and render to prio tab
+    const groups = {};
+    cached.forEach(t => {
+      if (!groups[t.propName]) groups[t.propName] = [];
+      groups[t.propName].push(t);
+    });
+    const container = document.getElementById('prio-tab-body');
+    if (!container) return;
+    let html = '';
+    Object.entries(groups).forEach(([propName, tasks]) => {
+      const doneCount = tasks.filter(t => t.done).length;
+      const undoneCount = tasks.filter(t => !t.done).length;
+      html += '<div class="prio-group">'
+        +'<div class="prio-group-hdr">'+esc(propName)+' <span class="prio-group-cnt">'+doneCount+'/'+tasks.length+' (未完了 '+undoneCount+')</span></div>'
+        +'<div class="prio-group-body">'+tasks.map(t => prioTaskRowHTML(t, t.propName)).join('')+'</div>'
+      +'</div>';
+    });
+    container.innerHTML = html;
+    updateTabBadges();
   } catch(e) {}
 }
-
-function togglePrioPanel() { document.getElementById('prio-panel').classList.toggle('open'); }
 
 // ─ 優先トグル ─────────────────────────────────────────────────
 async function togglePriority(id, propName, cid) {
@@ -2389,6 +2916,15 @@ function showToast(msg) {
 // ═══════════════════════════════════════════════════════
 restoreTaskCache();
 restorePrioPanelFromCache();
+// Restore last active main tab
+(function() {
+  const savedTab = localStorage.getItem('taskApp_mainTab');
+  if (savedTab && ['props','prio','indiv'].includes(savedTab)) {
+    switchMainTab(savedTab);
+  } else {
+    switchMainTab('props');
+  }
+})();
 checkSetup();
 </script>
 </body>
